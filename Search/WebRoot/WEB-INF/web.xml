@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.5" 
+	xmlns="http://java.sun.com/xml/ns/javaee" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+  <display-name></display-name>	
+  <welcome-file-list>
+    <welcome-file>new.jsp</welcome-file>
+  </welcome-file-list>
+  
+  	<!-- Axis2 Servlet配置 -->
+	<servlet>
+		<servlet-name>AxisServlet</servlet-name>
+		<servlet-class>org.apache.axis2.transport.http.AxisServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet>
+		<servlet-name>AxisAdminServlet</servlet-name>
+		<servlet-class>org.apache.axis2.webapp.AxisAdminServlet</servlet-class>
+	</servlet>
+	
+	
+	
+		<!-- 搜索 Servlet配置 -->
+	<servlet>
+		<servlet-name>SearchServlet2</servlet-name>
+		<servlet-class>com.shenji.web.servlet.SearchServlet2</servlet-class>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>SearchServlet2</servlet-name>
+		<url-pattern>/SearchServlet2</url-pattern>
+	</servlet-mapping>
+	
+	
+		<servlet>
+		<servlet-name>SearchServlet</servlet-name>
+		<servlet-class>com.shenji.web.servlet.SearchServlet</servlet-class>
+	</servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>ShowTextServlet</servlet-name>
+    <servlet-class>com.shenji.web.servlet.ShowTextServlet</servlet-class>
+  </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>DownloadPdfServlet</servlet-name>
+    <servlet-class>com.shenji.web.servlet.DownloadPdfServlet</servlet-class>
+  </servlet>
+
+
+	
+	<servlet-mapping>
+		<servlet-name>SearchServlet</servlet-name>
+		<url-pattern>/SearchServlet</url-pattern>
+	</servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>ShowTextServlet</servlet-name>
+    <url-pattern>/ShowTextServlet</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>DownloadPdfServlet</servlet-name>
+    <url-pattern>/DownloadPdfServlet</url-pattern>
+  </servlet-mapping>
+	
+</web-app>
