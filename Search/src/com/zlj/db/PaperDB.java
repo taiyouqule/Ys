@@ -63,5 +63,52 @@ public class PaperDB {
 						paper.getTitle(), paper.getWriter(),
 						paper.getWrite_time(), paper.getWhere_from()));
 	}
+	
+	
+	public Paper getPaperJsonMsg(int paperid) throws ConnectionPoolException {
+		Connection connection = null;
+		Paper paper = new Paper();
+		try {
+			connection = ConnectionPool.getInstance().getConnection();
+		} catch (ConnectionPoolException e) {
+			// TODO Auto-generated catch block
+			throw e;
+		}
+		PreparedStatement statement = null;
+		ResultSet rs = null;
+		try {
+			statement = connection
+					.prepareStatement("select * from paper where paperid=?");
+			statement.setInt(1, paperid);
+			rs = statement.executeQuery();
+			while (rs.next()) {
+				paper = new Paper();
+				paper.setPaperid(paperid);
+				paper.setPaperid(rs.getInt("paperid"));
+				paper.setTitle(rs.getString("title"));
+				paper.setWriter(rs.getString("writer"));
+				paper.setWrite_time(rs.getTimestamp("write_time"));
+				paper.setWhere_from(rs.getString("where_from"));
+			}
+
+		} catch (Exception e) {
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
+			return paper;
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (statement != null)
+					statement.close();
+				if (connection != null)
+					connection.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
+			}
+		}
+
+		return paper;
+	}
 
 }

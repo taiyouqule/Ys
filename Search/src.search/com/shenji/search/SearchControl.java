@@ -25,13 +25,16 @@ import com.shenji.search.bean.SearchBean;
 import com.shenji.search.database.DBPhraseManager;
 import com.shenji.search.exception.EngineException;
 import com.shenji.search.exception.SearchProcessException;
+import com.shenji.search.search.SearchJsonThread;
 import com.shenji.search.search.SearchThread;
 import com.shenji.search.strategy.DividingLineServer;
 import com.shenji.search.strategy.MaxAndMyDictSimilarity;
 import com.shenji.search.strategy.ScoreComparator;
+import com.shenji.search.strategy.ScoreComparatorJson;
 import com.shenji.search.strategy.SearchNonBusinessMatching;
 import com.shenji.search.strategy.SearchPatternMatching;
 import com.shenji.search.strategy.SimilarityComparator;
+import com.shenji.web.bean.ItemBean;
 
 public class SearchControl {
 	private boolean pretreatmentResult = false;
@@ -105,12 +108,73 @@ public class SearchControl {
 		// return result;
 	}
 
+	private List<ItemBean> searchJson(String args,
+			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
+		// 新建线程池
+		// ExecutorService pool =
+		// Executors.newFixedThreadPool(Common.searchDir.length);//重写线程池异常处理
+		ExecutorService pool = this
+				.getExcutorService(Configuration.searchDir.length);
+		// 存放带返回值的线程列表
+		List<Future<List<ItemBean>>> list = new ArrayList<Future<List<ItemBean>>>();
+		// 存放查询结果的结果集
+		List<ItemBean> result = new ArrayList<ItemBean>();
+		// 开启Common.searchDir.length个线程
+		try {
+			for (int i = 0; i < Configuration.searchDir.length; i++) {
+				// 新建线程
+				Callable<List<ItemBean>> c = new SearchJsonThread(args,
+						Configuration.searchDir[i], rType);
+
+				// 提交带返回值的线程给线程池
+				Future<List<ItemBean>> f = pool.submit(c);
+				list.add(f);
+			}
+			for (Future<List<ItemBean>> f : list) {
+				// 阻塞方法，得到线程中的结果
+				List<ItemBean> subList = f.get();
+				// 普通打分排序
+				if (subList != null && subList.size() > 0) {
+					Collections.sort(subList,
+							new ScoreComparatorJson<ItemBean>());
+					result.addAll(subList);
+				}
+				// 讲该线程查询结果添加到结果集中
+
+			}
+			// 关闭线程池
+			pool.shutdown();
+			return result;
+		} catch (ExecutionException e) {
+			// 判断ExecutionException包装的异常是否为自定义异常
+			if (e.getCause() instanceof SearchProcessException) {// 自定义的异常
+				throw ((SearchProcessException) e.getCause());
+			} else {// 其他可能出现的异常
+				throw new SearchProcessException("Unknow Error in Search!",
+						e.getCause(),
+						SearchProcessException.ErrorCode.UnKnowError);
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			throw new SearchProcessException(
+					"Unknow Error in Search by interRuptedException!",
+					e.getCause(), SearchProcessException.ErrorCode.UnKnowError);
+		}
+		// return result;
+	}
+
 	public String searchBasic(String args, IEnumSearch.SearchRelationType rType)
 			throws SearchProcessException {
 		List<SearchBean> beans = search(args, rType);
 		// 转化为普通HTML文档
 		String html = DividingLineServer.simpleSort(beans);
 		return html;
+	}
+
+	public List<ItemBean> searchBasicJson(String args,
+			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
+		List<ItemBean> beans = searchJson(args, rType);
+		return beans;
 	}
 
 	private String aftertreatment(String args,
@@ -120,7 +184,7 @@ public class SearchControl {
 			maxAndMyDictSimilarity = new MaxAndMyDictSimilarity(args);
 		} catch (EngineException e) {
 			// TODO Auto-generated catch block
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 			return DividingLineServer.cutlineSort(beans);
 		}
 		// 设置相似度
@@ -128,7 +192,7 @@ public class SearchControl {
 			maxAndMyDictSimilarity.setSimilarity(beans);
 		} catch (EngineException e) {
 			// TODO Auto-generated catch block
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 		}
 		// 自定义排序
 		maxAndMyDictSimilarity.sort(comparator, beans);
@@ -152,7 +216,7 @@ public class SearchControl {
 			answer = dbManager.getAnswer(args);
 		} catch (ConnectionPoolException e) {
 			// TODO Auto-generated catch block
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 		}
 		if (answer != null && answer.length() > 0) {
 			pretreatmentResult = true;
@@ -167,7 +231,7 @@ public class SearchControl {
 			} catch (EngineException e) {
 				// TODO Auto-generated catch block
 				// 这里有问题，不应该抛到这层
-				Log.getLogger(this.getClass()).error(e.getMessage(),e);
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
 			}
 		}
 		return args;
@@ -188,7 +252,6 @@ public class SearchControl {
 
 	}
 
-
 	public ResultShowBean searchBasicNum(String args, int number,
 			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
 		String html = this.searchBasic(args, rType);
@@ -200,7 +263,6 @@ public class SearchControl {
 		String html = this.searchOrdinary(args, rType);
 		return this.convertHtmlToBean(html, number);
 	}
-
 
 	private ResultShowBean convertHtmlToBean(String html, int number)
 			throws SearchProcessException {
@@ -247,7 +309,7 @@ public class SearchControl {
 				}
 			}
 		} catch (Exception e) {
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 
 		}
 		ResultShowBean resultShowBean = new ResultShowBean(code, reList);

@@ -3,6 +3,7 @@ package com.shenji.search.search;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
+import com.ibm.icu.text.SimpleDateFormat;
 import com.shenji.common.exception.ConnectionPoolException;
 import com.shenji.common.log.Log;
 import com.shenji.common.util.StringMatching;
@@ -40,6 +42,8 @@ import com.shenji.search.engine.CustomWordEngine;
 import com.shenji.search.engine.SynonymEngine;
 import com.shenji.search.exception.EngineException;
 import com.shenji.search.exception.SearchProcessException;
+import com.shenji.web.bean.ItemBean;
+import com.zlj.db.Paper;
 import com.zlj.db.PaperDB;
 
 /**
@@ -62,9 +66,10 @@ public class BooleanSearch {
 	public BooleanSearch(String args, Set<String> matchList,
 			Set<String> maxMatchSet, IEnumSearch.SearchRelationType rType) {
 		if (rType == SearchRelationType.AND_SEARCH) {
-		/*	List<String> temp = new ArrayList<String>();
-			for (String s : maxMatchSet)
-				temp.add(s);*/
+			/*
+			 * List<String> temp = new ArrayList<String>(); for (String s :
+			 * maxMatchSet) temp.add(s);
+			 */
 			this.matchList = maxMatchSet;
 			// temp.clear();
 		}
@@ -83,7 +88,7 @@ public class BooleanSearch {
 			this.engine_Common = new CommonSynonymDic();
 		} catch (EngineException e) {
 			// TODO Auto-generated catch block
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 		}
 	}
 
@@ -92,6 +97,21 @@ public class BooleanSearch {
 		try {
 			Map<Document, Float> map = search(from);
 			List<SearchBean> result = addHits2List(map);
+			return result;
+		} finally {
+			// 关闭两类同义词引擎
+			if (engine_Custom != null)
+				engine_Custom.close();
+			if (engine_Common != null)
+				engine_Common.close();
+		}
+	}
+
+	public List<ItemBean> getJsonResult(String args, String from)
+			throws Exception {
+		try {
+			Map<Document, Float> map = search(from);
+			List<ItemBean> result = getRecordJsonList(map);
 			return result;
 		} finally {
 			// 关闭两类同义词引擎
@@ -133,7 +153,7 @@ public class BooleanSearch {
 			} catch (EngineException e) {
 				// TODO Auto-generated catch block
 				// 同义词标记失败，这个异常不应该抛出去
-				Log.getLogger(this.getClass()).error(e.getMessage(),e);
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
 			}
 		}
 		return str;
@@ -149,7 +169,7 @@ public class BooleanSearch {
 			Document doc = entry.getKey();
 			float score = entry.getValue();
 			SearchBean bean = new SearchBean();
-//			String content = doc.get("answer");
+			// String content = doc.get("answer");
 			String content = "";
 			String dealContent = content;
 			bean.setPureContent(dealContent);
@@ -171,15 +191,16 @@ public class BooleanSearch {
 			path = Configuration.webPath + "/" + path;
 			bean.setFaqId(fileName);
 			// 构造FAQ内容
-//			if (from == Configuration.searchDir[0]) {
+			// if (from == Configuration.searchDir[0]) {
 			if (true) {
 				content = "<div class=\"q\">" + question
 						+ "</div><div class=\"a\">" + "<font size=\"2\">"
-						+ answer + "</font><br/>"+"</div>";
+						+ answer + "</font><br/>" + "</div>";
 				content = markContent(content);
-//				content = "<a href=\"" + path + "\">" + content + "</a>";
+				// content = "<a href=\"" + path + "\">" + content + "</a>";
 				try {
-					content+=new PaperDB().getPaperMsg(Integer.parseInt(bean.getPaperid()));
+					content += new PaperDB().getPaperMsg(Integer.parseInt(bean
+							.getPaperid()));
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -187,8 +208,17 @@ public class BooleanSearch {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				content += "<a href=\"" + "ShowTextServlet?paperid="+bean.getPaperid()+"&line="+bean.getLine() + "\">" +"点击此处预览" + "</a>"+"&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
-				content += "<a href=\"" + "DownloadPdfServlet?paperid="+bean.getPaperid() + "\">" +"点击此处下载" + "</a>";
+				content += "<a href=\""
+						+ "ShowTextServlet?paperid="
+						+ bean.getPaperid()
+						+ "&line="
+						+ bean.getLine()
+						+ "\">"
+						+ "点击此处预览"
+						+ "</a>"
+						+ "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
+				content += "<a href=\"" + "DownloadPdfServlet?paperid="
+						+ bean.getPaperid() + "\">" + "点击此处下载" + "</a>";
 				bean.setContent(content);
 			}// 可以不看
 			else {
@@ -209,6 +239,87 @@ public class BooleanSearch {
 
 	}
 
+	private List<ItemBean> getRecordJsonList(Map<Document, Float> map) {
+		List<ItemBean> list = new ArrayList<ItemBean>();
+		// Map<String, String> contentNameMap = new HashMap<String, String>();
+		Iterator<Map.Entry<Document, Float>> iterator = map.entrySet()
+				.iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<Document, Float> entry = iterator.next();
+			Document doc = entry.getKey();
+			float score = entry.getValue();
+			SearchBean bean = new SearchBean();
+			ItemBean item = new ItemBean();
+			// String content = doc.get("answer");
+			String content = "";
+			String dealContent = content;
+			bean.setPureContent(dealContent);
+			// 显示最大文本
+			content = content
+					.substring(
+							0,
+							content.length() > Parameters.maxTestShow ? Parameters.maxTestShow
+									: content.length());
+			String question = doc.get("question");
+			String answer = doc.get("answer");
+			bean.setQuestion(question);
+			bean.setAnswer(answer);
+			bean.setLine(doc.get("line"));
+			bean.setPaperid(doc.get("paperid"));
+			String path = doc.get("path");
+			// 获得htm文件名,不包括后缀名
+			String fileName = path.split("[/.]")[1];
+			path = Configuration.webPath + "/" + path;
+			bean.setFaqId(fileName);
+			// 构造FAQ内容
+			// if (from == Configuration.searchDir[0]) {
+			if (true) {
+				// content = "<div class=\"q\">" + question
+				// + "</div><div class=\"a\">" + "<font size=\"2\">"
+				// + answer + "</font><br/>"+"</div>";
+				// content = markContent(content);
+
+				item.setTitle(markContent("<div class=\"q\">" + question
+						+ "</div>"));
+				item.setContent(markContent("<div class=\"a\">"
+						+ "<font size=\"2\">" + answer + "</font><br/>"
+						+ "</div>"));
+				// content = "<a href=\"" + path + "\">" + content + "</a>";
+				try {
+					// content+=new
+					// PaperDB().getPaperMsg(Integer.parseInt(bean.getPaperid()));
+					Paper paper = new PaperDB().getPaperJsonMsg(Integer
+							.parseInt(bean.getPaperid()));
+					item.setTag_from(paper.getWhere_from());
+					item.setTag_title(paper.getTitle());
+					item.setTag_write_time(new SimpleDateFormat("yyyy-MM-dd")
+							.format(new Date(paper.getWrite_time().getTime())));
+					item.setTag_writer(paper.getWriter());
+				} catch (NumberFormatException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ConnectionPoolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				item.setView("<a href=\"" + "ShowTextServlet?paperid="
+						+ bean.getPaperid() + "&line=" + bean.getLine() + "\">"
+						+ "点击此处预览" + "</a>");
+				item.setDownload("<a href=\"" + "DownloadPdfServlet?paperid="
+						+ bean.getPaperid() + "\">" + "点击此处下载" + "</a>");
+				bean.setContent(content);
+			}
+			// 固有相似度
+			double similarity = StringMatching.getInherentSimilarity(simWords,
+					dealContent);
+			item.setSimilarity(similarity);
+			item.setScore(score);
+			list.add(item);
+		}
+		return list;
+
+	}
+
 	private float getCustomWeight(String args) throws EngineException {
 		float weight = 1;
 		// 业务词典设置权重
@@ -217,7 +328,7 @@ public class BooleanSearch {
 			weight_bussiness = BusinessDic.getInstance().getWeight(args);
 		} catch (EngineException e) {
 			// TODO Auto-generated catch block
-			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			Log.getLogger(this.getClass()).error(e.getMessage(), e);
 		}
 		if (weight_bussiness != -1) {
 			weight = weight * weight_bussiness;
@@ -228,7 +339,7 @@ public class BooleanSearch {
 			maxMatchSet.remove(args);
 		else
 			weight = weight * Parameters.maxMatchWeight;
-		CustomWordEngine engine=CustomWordDic.getInstance();
+		CustomWordEngine engine = CustomWordDic.getInstance();
 		// 自建词典设置权重
 		if (engine.isCustomWord(args))
 			weight = weight * Parameters.myIkdictWeight * args.length();
@@ -271,7 +382,7 @@ public class BooleanSearch {
 				if (dir != null)
 					dir.close();
 			} catch (IOException e) {
-				Log.getLogger(this.getClass()).error(e.getMessage(),e);
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
 			}
 			throw new SearchProcessException("Lucene Index Open failed!", ex,
 					SearchProcessException.ErrorCode.LuceneFileError);
@@ -346,7 +457,7 @@ public class BooleanSearch {
 				if (searcher != null)
 					searcher.close();
 			} catch (Exception e) {
-				Log.getLogger(this.getClass()).error(e.getMessage(),e);
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
 			}
 		}
 	}
