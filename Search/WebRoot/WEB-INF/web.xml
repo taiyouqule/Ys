@@ -56,6 +56,13 @@
     <servlet-name>GetJsonServlet</servlet-name>
     <servlet-class>com.shenji.web.servlet.GetJsonServlet</servlet-class>
   </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>EasyJsonServlet</servlet-name>
+    <servlet-class>com.shenji.web.servlet.EasyJsonServlet</servlet-class>
+  </servlet>
+
 
 
 
@@ -75,6 +82,10 @@
   <servlet-mapping>
     <servlet-name>GetJsonServlet</servlet-name>
     <url-pattern>/GetJsonServlet</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>EasyJsonServlet</servlet-name>
+    <url-pattern>/EasyJsonServlet</url-pattern>
   </servlet-mapping>
 	
 </web-app>

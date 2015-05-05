@@ -25,16 +25,19 @@ import com.shenji.search.bean.SearchBean;
 import com.shenji.search.database.DBPhraseManager;
 import com.shenji.search.exception.EngineException;
 import com.shenji.search.exception.SearchProcessException;
+import com.shenji.search.search.SearchEasyJsonThread;
 import com.shenji.search.search.SearchJsonThread;
 import com.shenji.search.search.SearchThread;
 import com.shenji.search.strategy.DividingLineServer;
+import com.shenji.search.strategy.EasyScoreComparatorJson;
 import com.shenji.search.strategy.MaxAndMyDictSimilarity;
 import com.shenji.search.strategy.ScoreComparator;
 import com.shenji.search.strategy.ScoreComparatorJson;
 import com.shenji.search.strategy.SearchNonBusinessMatching;
 import com.shenji.search.strategy.SearchPatternMatching;
 import com.shenji.search.strategy.SimilarityComparator;
-import com.shenji.web.bean.ItemBean;
+import com.shenji.web.bean.EasyItemBean;
+import com.shenji.web.bean.YsItemBean;
 
 public class SearchControl {
 	private boolean pretreatmentResult = false;
@@ -108,7 +111,7 @@ public class SearchControl {
 		// return result;
 	}
 
-	private List<ItemBean> searchJson(String args,
+	private List<YsItemBean> searchJson(String args,
 			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
 		// 新建线程池
 		// ExecutorService pool =
@@ -116,27 +119,82 @@ public class SearchControl {
 		ExecutorService pool = this
 				.getExcutorService(Configuration.searchDir.length);
 		// 存放带返回值的线程列表
-		List<Future<List<ItemBean>>> list = new ArrayList<Future<List<ItemBean>>>();
+		List<Future<List<YsItemBean>>> list = new ArrayList<Future<List<YsItemBean>>>();
 		// 存放查询结果的结果集
-		List<ItemBean> result = new ArrayList<ItemBean>();
+		List<YsItemBean> result = new ArrayList<YsItemBean>();
 		// 开启Common.searchDir.length个线程
 		try {
 			for (int i = 0; i < Configuration.searchDir.length; i++) {
 				// 新建线程
-				Callable<List<ItemBean>> c = new SearchJsonThread(args,
+				Callable<List<YsItemBean>> c = new SearchJsonThread(args,
 						Configuration.searchDir[i], rType);
 
 				// 提交带返回值的线程给线程池
-				Future<List<ItemBean>> f = pool.submit(c);
+				Future<List<YsItemBean>> f = pool.submit(c);
 				list.add(f);
 			}
-			for (Future<List<ItemBean>> f : list) {
+			for (Future<List<YsItemBean>> f : list) {
 				// 阻塞方法，得到线程中的结果
-				List<ItemBean> subList = f.get();
+				List<YsItemBean> subList = f.get();
 				// 普通打分排序
 				if (subList != null && subList.size() > 0) {
 					Collections.sort(subList,
-							new ScoreComparatorJson<ItemBean>());
+							new ScoreComparatorJson<YsItemBean>());
+					result.addAll(subList);
+				}
+				// 讲该线程查询结果添加到结果集中
+
+			}
+			// 关闭线程池
+			pool.shutdown();
+			return result;
+		} catch (ExecutionException e) {
+			// 判断ExecutionException包装的异常是否为自定义异常
+			if (e.getCause() instanceof SearchProcessException) {// 自定义的异常
+				throw ((SearchProcessException) e.getCause());
+			} else {// 其他可能出现的异常
+				throw new SearchProcessException("Unknow Error in Search!",
+						e.getCause(),
+						SearchProcessException.ErrorCode.UnKnowError);
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			throw new SearchProcessException(
+					"Unknow Error in Search by interRuptedException!",
+					e.getCause(), SearchProcessException.ErrorCode.UnKnowError);
+		}
+		// return result;
+	}
+
+	private List<EasyItemBean> searchGetEasyJson(String args,
+			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
+		// 新建线程池
+		// ExecutorService pool =
+		// Executors.newFixedThreadPool(Common.searchDir.length);//重写线程池异常处理
+		ExecutorService pool = this
+				.getExcutorService(Configuration.searchDir.length);
+		// 存放带返回值的线程列表
+		List<Future<List<EasyItemBean>>> list = new ArrayList<Future<List<EasyItemBean>>>();
+		// 存放查询结果的结果集
+		List<EasyItemBean> result = new ArrayList<EasyItemBean>();
+		// 开启Common.searchDir.length个线程
+		try {
+			for (int i = 0; i < Configuration.searchDir.length; i++) {
+				// 新建线程
+				Callable<List<EasyItemBean>> c = new SearchEasyJsonThread(args,
+						Configuration.searchDir[i], rType);
+
+				// 提交带返回值的线程给线程池
+				Future<List<EasyItemBean>> f = pool.submit(c);
+				list.add(f);
+			}
+			for (Future<List<EasyItemBean>> f : list) {
+				// 阻塞方法，得到线程中的结果
+				List<EasyItemBean> subList = f.get();
+				// 普通打分排序
+				if (subList != null && subList.size() > 0) {
+					Collections.sort(subList,
+							new EasyScoreComparatorJson<EasyItemBean>());
 					result.addAll(subList);
 				}
 				// 讲该线程查询结果添加到结果集中
@@ -171,9 +229,15 @@ public class SearchControl {
 		return html;
 	}
 
-	public List<ItemBean> searchBasicJson(String args,
+	public List<YsItemBean> searchBasicJson(String args,
 			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
-		List<ItemBean> beans = searchJson(args, rType);
+		List<YsItemBean> beans = searchJson(args, rType);
+		return beans;
+	}
+
+	public List<EasyItemBean> searchEasyJson(String args,
+			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
+		List<EasyItemBean> beans = searchGetEasyJson(args, rType);
 		return beans;
 	}
 

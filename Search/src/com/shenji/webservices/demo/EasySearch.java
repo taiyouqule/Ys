@@ -3,7 +3,7 @@ package com.shenji.webservices.demo;
 import com.shenji.search.IEnumSearch;
 import com.shenji.webservices.port.Search;
 
-public class DSearch {
+public class EasySearch {
 
 	/**
 	 * @param args
@@ -11,18 +11,16 @@ public class DSearch {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-//		dSearchNum();
-		//dRebuildIndex();
+		// dSearchNum();
+		// dRebuildIndex();
 		// daddNewFAQ();
-		 drebuildIndex();   //院士问答系统重建索引
-		 
-		//dFenci();
-		//dSearch();
-		//daddPhrase();
+		easyRebuildIndex(); // 简易问答系统重建索引
+
+		// dFenci();
+		// dSearch();
+		// daddPhrase();
 	}
 
-	
-	
 	public static void dRebuildIndex() {
 		Search search = new Search();
 		search.rebuildIndex("0");
@@ -35,11 +33,11 @@ public class DSearch {
 				IEnumSearch.Fenci.MORE_NOSYN.value()));
 		System.out.println(search.fenCi(str,
 				IEnumSearch.Fenci.MAX_NOSYN.value()));
-		
-		System.out.println(search.fenCi(str,
-				IEnumSearch.Fenci.MORE_SYN.value()));
-		System.out.println(search.fenCi(str,
-				IEnumSearch.Fenci.MAX_SYN.value()));
+
+		System.out
+				.println(search.fenCi(str, IEnumSearch.Fenci.MORE_SYN.value()));
+		System.out
+				.println(search.fenCi(str, IEnumSearch.Fenci.MAX_SYN.value()));
 	}
 
 	public static void dSearch() {
@@ -55,16 +53,15 @@ public class DSearch {
 		System.out.println(search.addNewFAQ(new String[] { "郭宏伟是傻逼吗？" },
 				new String[] { "郭宏伟不是，他是大帅比！" }));
 	}
-	
-	
+
 	public static void daddPhrase() {
 		Search search = new Search();
 		System.out.println(search.addPhrase("郭宏伟", "大帅比"));
 	}
 
-	public static void drebuildIndex() {
+	public static void easyRebuildIndex() {
 		Search search = new Search();
-		search.rebuildIndex("0");
+		search.easyRebuildIndex("0");
 	}
 
 	public static void dSearchNum() {

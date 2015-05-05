@@ -9,7 +9,7 @@ import java.util.concurrent.Callable;
 import com.shenji.search.FenciControl;
 import com.shenji.search.IEnumSearch;
 import com.shenji.search.exception.SearchProcessException;
-import com.shenji.web.bean.ItemBean;
+import com.shenji.web.bean.YsItemBean;
 
 /**
  * 查询线程（带返回值）
@@ -17,7 +17,7 @@ import com.shenji.web.bean.ItemBean;
  * @author sj
  * 
  */
-public class SearchJsonThread implements Callable<List<ItemBean>> {
+public class SearchJsonThread implements Callable<List<YsItemBean>> {
 
 	private String args;
 	private String from;
@@ -113,11 +113,11 @@ public class SearchJsonThread implements Callable<List<ItemBean>> {
 		initSet();
 	}
 
-	public List<ItemBean> call() throws Exception {
+	public List<YsItemBean> call() throws Exception {
 		// 构建布尔查询对象并返回结果
 		BooleanSearch booleanSearch = new BooleanSearch(args, matchList,
 				maxMatchSet, rType);
-		List<ItemBean> result = null;
+		List<YsItemBean> result = null;
 		try {
 			result = booleanSearch.getJsonResult(args, from);
 		} catch (SearchProcessException e) {

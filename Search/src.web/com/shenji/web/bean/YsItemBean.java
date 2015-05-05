@@ -6,7 +6,7 @@ package com.shenji.web.bean;
  * @author Administrator
  * 
  */
-public class ItemBean {
+public class YsItemBean {
 	private float score;
 	private double similarity;
 	private String title;

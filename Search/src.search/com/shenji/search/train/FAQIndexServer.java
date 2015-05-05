@@ -100,6 +100,16 @@ public class FAQIndexServer {
 				dealFile(files[i]);
 		}
 	}
+	
+	private void easyDealDir(File dir) {
+		File[] files = dir.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].isDirectory())
+				easyDealDir(files[i]);
+			else
+				easyDealFile(files[i]);
+		}
+	}
 
 	private String getName(File file) {
 		try {
@@ -145,6 +155,39 @@ public class FAQIndexServer {
 			Field pf = new Field("paperid", paperId, Field.Store.YES,
 					Field.Index.ANALYZED, TermVector.NO);
 			doc.add(pf);
+
+			Field p = new Field("path", getName(file), Field.Store.YES,
+					Field.Index.NOT_ANALYZED);
+			//System.err.println(getName(file));
+			Log.getLogger(this.getClass()).debug(getName(file));
+			doc.add(p);
+			indexWriter.addDocument(doc);
+		} catch (Exception e) {
+			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+		}
+	}
+	
+	private void easyDealFile(File file) {
+		FileService f = new FileService();
+		try {
+			String html = f.read(file.getCanonicalPath(), "utf-8");
+
+//			String content = delHTMLTag(html);
+			doc = new Document();
+//			Field c = new Field("content", content, Field.Store.YES,
+//					Field.Index.ANALYZED, TermVector.NO);
+//			doc.add(c);
+
+			String question = getQuestion(html);
+			Field q = new Field("question", question, Field.Store.YES,
+					Field.Index.ANALYZED, TermVector.NO);
+			doc.add(q);
+
+			String answer = getAnswer(html);
+			Field a = new Field("answer", answer, Field.Store.YES,
+					Field.Index.ANALYZED, TermVector.NO);
+			doc.add(a);
+			
 
 			Field p = new Field("path", getName(file), Field.Store.YES,
 					Field.Index.NOT_ANALYZED);
@@ -210,6 +253,57 @@ public class FAQIndexServer {
 						IndexWriter.MaxFieldLength.UNLIMITED);
 				indexWriter.setMaxBufferedDocs(maxBufferedDocs);
 				dealDir(htmlDir[i]);
+				indexWriter.optimize();
+			}
+		} catch (Exception e) {
+			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+		} finally {
+			if (engine != null)
+				engine.close();
+			if (analyzer != null)
+				analyzer.close();
+		}
+		Log.getLogger(this.getClass()).info("FAQ库重建索引完成！");
+		return true;
+	}
+	
+	
+	public boolean easyCreateIndex() {
+		Directory directory = null;
+		String[] searchDir = {
+				Configuration.indexPath + "/" + Configuration.faqFolder,
+				Configuration.indexPath + "/" + Configuration.learnFolder };
+		File[] htmlDir = {
+				new File(Configuration.notesPath + "/"
+						+ Configuration.faqFolder),
+				new File(Configuration.notesPath + "/"
+						+ Configuration.learnFolder) };
+		File indexFile = null;
+		Analyzer analyzer = null;
+		int maxBufferedDocs = 500;
+		SynonymEngine engine = null;
+		try {
+			engine = new CommonSynonymDic();
+		} catch (EngineException e) {
+			// TODO Auto-generated catch block
+			Log.getLogger(this.getClass()).error(e.getMessage(),e);
+			return false;
+		}
+		try {
+			for (int i = 0; i < index.length; i++) {
+
+				indexFile = new File(searchDir[index[i]]);
+				if (indexFile.exists()) {
+					deleteDir(indexFile);
+				}
+				indexFile.mkdir();
+				directory = FSDirectory.open(indexFile);
+				// analyzer = new IKAnalyzer();
+				analyzer = new SynonymAnalyzer(engine);
+				indexWriter = new IndexWriter(directory, analyzer, true,
+						IndexWriter.MaxFieldLength.UNLIMITED);
+				indexWriter.setMaxBufferedDocs(maxBufferedDocs);
+				easyDealDir(htmlDir[i]);
 				indexWriter.optimize();
 			}
 		} catch (Exception e) {

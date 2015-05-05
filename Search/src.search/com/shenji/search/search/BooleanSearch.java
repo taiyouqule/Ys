@@ -42,7 +42,8 @@ import com.shenji.search.engine.CustomWordEngine;
 import com.shenji.search.engine.SynonymEngine;
 import com.shenji.search.exception.EngineException;
 import com.shenji.search.exception.SearchProcessException;
-import com.shenji.web.bean.ItemBean;
+import com.shenji.web.bean.EasyItemBean;
+import com.shenji.web.bean.YsItemBean;
 import com.zlj.db.Paper;
 import com.zlj.db.PaperDB;
 
@@ -107,11 +108,26 @@ public class BooleanSearch {
 		}
 	}
 
-	public List<ItemBean> getJsonResult(String args, String from)
+	public List<YsItemBean> getJsonResult(String args, String from)
 			throws Exception {
 		try {
 			Map<Document, Float> map = search(from);
-			List<ItemBean> result = getRecordJsonList(map);
+			List<YsItemBean> result = getRecordJsonList(map);
+			return result;
+		} finally {
+			// 关闭两类同义词引擎
+			if (engine_Custom != null)
+				engine_Custom.close();
+			if (engine_Common != null)
+				engine_Common.close();
+		}
+	}
+
+	public List<EasyItemBean> getEasyJsonResult(String args, String from)
+			throws Exception {
+		try {
+			Map<Document, Float> map = easySearch(from);
+			List<EasyItemBean> result = getRecordEasyJsonList(map);
 			return result;
 		} finally {
 			// 关闭两类同义词引擎
@@ -239,8 +255,8 @@ public class BooleanSearch {
 
 	}
 
-	private List<ItemBean> getRecordJsonList(Map<Document, Float> map) {
-		List<ItemBean> list = new ArrayList<ItemBean>();
+	private List<YsItemBean> getRecordJsonList(Map<Document, Float> map) {
+		List<YsItemBean> list = new ArrayList<YsItemBean>();
 		// Map<String, String> contentNameMap = new HashMap<String, String>();
 		Iterator<Map.Entry<Document, Float>> iterator = map.entrySet()
 				.iterator();
@@ -249,7 +265,7 @@ public class BooleanSearch {
 			Document doc = entry.getKey();
 			float score = entry.getValue();
 			SearchBean bean = new SearchBean();
-			ItemBean item = new ItemBean();
+			YsItemBean item = new YsItemBean();
 			// String content = doc.get("answer");
 			String content = "";
 			String dealContent = content;
@@ -307,6 +323,64 @@ public class BooleanSearch {
 						+ "点击此处预览" + "</a>");
 				item.setDownload("<a href=\"" + "DownloadPdfServlet?paperid="
 						+ bean.getPaperid() + "\">" + "点击此处下载" + "</a>");
+				bean.setContent(content);
+			}
+			// 固有相似度
+			double similarity = StringMatching.getInherentSimilarity(simWords,
+					dealContent);
+			item.setSimilarity(similarity);
+			item.setScore(score);
+			list.add(item);
+		}
+		return list;
+
+	}
+
+	private List<EasyItemBean> getRecordEasyJsonList(Map<Document, Float> map) {
+		List<EasyItemBean> list = new ArrayList<EasyItemBean>();
+		// Map<String, String> contentNameMap = new HashMap<String, String>();
+		Iterator<Map.Entry<Document, Float>> iterator = map.entrySet()
+				.iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<Document, Float> entry = iterator.next();
+			Document doc = entry.getKey();
+			float score = entry.getValue();
+			SearchBean bean = new SearchBean();
+			EasyItemBean item = new EasyItemBean();
+			// String content = doc.get("answer");
+			String content = "";
+			String dealContent = content;
+			bean.setPureContent(dealContent);
+			// 显示最大文本
+			content = content
+					.substring(
+							0,
+							content.length() > Parameters.maxTestShow ? Parameters.maxTestShow
+									: content.length());
+			String question = doc.get("question");
+			String answer = doc.get("answer");
+			bean.setQuestion(question);
+			bean.setAnswer(answer);
+			String path = doc.get("path");
+			// 获得htm文件名,不包括后缀名
+			String fileName = path.split("[/.]")[1];
+			path = Configuration.webPath + "/" + path;
+			bean.setFaqId(fileName);
+			// 构造FAQ内容
+			// if (from == Configuration.searchDir[0]) {
+			if (true) {
+				// content = "<div class=\"q\">" + question
+				// + "</div><div class=\"a\">" + "<font size=\"2\">"
+				// + answer + "</font><br/>"+"</div>";
+				// content = markContent(content);
+
+				item.setTitle(markContent("<div class=\"q\">" + question
+						+ "</div>"));
+				item.setContent(markContent("<div class=\"a\">"
+						+ "<font size=\"2\">" + answer + "</font><br/>"
+						+ "</div>"));
+				// content = "<a href=\"" + path + "\">" + content + "</a>";
+				item.setPath(path);
 				bean.setContent(content);
 			}
 			// 固有相似度
@@ -425,6 +499,106 @@ public class BooleanSearch {
 					} else if (rType == IEnumSearch.SearchRelationType.OR_SEARCH) {
 						Occur occur = BooleanClause.Occur.SHOULD;
 						booleanQuery.add(query, occur);
+					}
+				}
+			}
+			TopDocs topDocs = searcher.search(booleanQuery,
+					Parameters.maxResult);
+			ScoreDoc[] docs = topDocs.scoreDocs;
+			// 构造查询结果集
+			Map<Document, Float> map = new LinkedHashMap<Document, Float>();
+			for (ScoreDoc doc : docs) {
+				map.put(searcher.doc(doc.doc), doc.score);
+			}
+			System.out.println("共找到：" + topDocs.totalHits);
+			return map;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			throw new SearchProcessException(
+					"Search ScoreDocs has IoException!", e,
+					SearchProcessException.ErrorCode.SearchDocError);
+		} catch (Exception ex) {
+			// TODO: handle exception
+			throw new SearchProcessException(
+					"Search ScoreDocs has UnKnow Exception!", ex,
+					SearchProcessException.ErrorCode.UnKnowError);
+		} finally {
+			try {
+				if (reader != null)
+					reader.close();
+				if (dir != null)
+					dir.close();
+				if (searcher != null)
+					searcher.close();
+			} catch (Exception e) {
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
+			}
+		}
+	}
+
+	/**
+	 * @param from
+	 * @return
+	 * @throws Exception
+	 */
+	private Map<Document, Float> easySearch(String from) throws Exception {
+		// 布尔查询向量
+		String[] filedValues = (String[]) matchList
+				.toArray(new String[matchList.size()]);
+		// 查询字段（域）
+		String QfiledKey = "question";
+		String AfiledKey = "answer";
+		// ArrayList<Document> arrayList = null;
+		IndexReader reader = null;
+		Directory dir = null;
+		Searcher searcher = null;
+
+		File file = new File(from);
+		// 判断索引目录存在长度不为0
+		if (file.isDirectory() && file.listFiles().length == 0) {
+			throw new SearchProcessException("Lucene Index is Null!",
+					SearchProcessException.ErrorCode.LuceneFileError);
+		}
+		// 打开索引目录
+		try {
+			dir = FSDirectory.open(file);
+			reader = IndexReader.open(dir);
+		} catch (Exception ex) {
+			try {
+				if (reader != null)
+					reader.close();
+				if (dir != null)
+					dir.close();
+			} catch (IOException e) {
+				Log.getLogger(this.getClass()).error(e.getMessage(), e);
+			}
+			throw new SearchProcessException("Lucene Index Open failed!", ex,
+					SearchProcessException.ErrorCode.LuceneFileError);
+		}
+		try {
+			searcher = new IndexSearcher(reader);
+			BooleanQuery booleanQuery = new BooleanQuery();
+			for (int i = 0; i < filedValues.length; i++) {
+				float weight = 1;
+				weight = this.getCustomWeight(filedValues[i]);
+				// FAQ查询
+				if (from == Configuration.searchDir[0]) {
+					Term term_q = null;
+					term_q = new Term(QfiledKey, filedValues[i]);
+					Query query_q = new TermQuery(term_q);
+					query_q.setBoost(weight);
+
+					Term term_a = new Term(AfiledKey, filedValues[i]);
+					Query query_a = new TermQuery(term_a);
+					query_a.setBoost(weight / Parameters.qaProportion);
+					// System.err.println(filedValues[i]+":"+query.getBoost());
+					if (rType == IEnumSearch.SearchRelationType.AND_SEARCH) {
+						Occur occur = BooleanClause.Occur.MUST;
+						booleanQuery.add(query_q, occur);
+					} else if (rType == IEnumSearch.SearchRelationType.OR_SEARCH) {
+						Occur occur = BooleanClause.Occur.SHOULD;
+						booleanQuery.add(query_q, occur);
+						booleanQuery.add(query_a, occur);
 					}
 				}
 			}

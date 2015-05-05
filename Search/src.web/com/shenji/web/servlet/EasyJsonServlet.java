@@ -14,14 +14,14 @@ import com.google.gson.GsonBuilder;
 import com.shenji.common.log.Log;
 import com.shenji.search.IEnumSearch.SearchRelationType;
 import com.shenji.search.SearchControl;
-import com.shenji.web.bean.YsItemBean;
+import com.shenji.web.bean.EasyItemBean;
 
-public class GetJsonServlet extends HttpServlet {
+public class EasyJsonServlet extends HttpServlet {
 
 	/**
 	 * Constructor of the object.
 	 */
-	public GetJsonServlet() {
+	public EasyJsonServlet() {
 		super();
 	}
 
@@ -76,10 +76,10 @@ public class GetJsonServlet extends HttpServlet {
 				"ISO8859_1"), "UTF-8");
 		System.out.println("搜索内容----->" + search);
 		// System.err.println(tagType);
-		List<YsItemBean> list = null;
+		List<EasyItemBean> list = null;
 
 		try {
-			list = new SearchControl().searchBasicJson(search,
+			list = new SearchControl().searchEasyJson(search,
 					SearchRelationType.OR_SEARCH);
 			Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 			String line = gson.toJson(list);

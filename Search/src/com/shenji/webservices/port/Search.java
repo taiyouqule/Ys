@@ -296,6 +296,12 @@ public class Search {
 			return new ResourcesControl().rebuildIndex(index);
 		}
 	}
+	
+	public boolean easyRebuildIndex(String index) {
+		synchronized (Search_LOCK) {
+			return new ResourcesControl().easyRebuildIndex(index);
+		}
+	}
 
 	public String getAboutWords(String word) {
 		return new DicControl().getAboutWords(word);

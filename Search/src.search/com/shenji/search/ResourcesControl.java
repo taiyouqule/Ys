@@ -230,6 +230,24 @@ public class ResourcesControl {
 	}
 
 	/**
+	 * 重建索引
+	 * 
+	 * @param index
+	 *            传入0即可
+	 * @return 1成功 小于1失败
+	 */
+	public boolean easyRebuildIndex(String index) {
+		DBPhraseManager dbManager = new DBPhraseManager();
+		String operation = "重建索引";
+		dbManager.modifyLog(operation, operation);
+		boolean b = false;
+		b = new SynonmIndexServer().createIndex();
+		FAQIndexServer indexServer = new FAQIndexServer(index);
+		b = indexServer.easyCreateIndex() && b;
+		indexServer.close();
+		return b;
+	}
+	/**
 	 * 【未启用】添加对话
 	 * 
 	 * @param str
