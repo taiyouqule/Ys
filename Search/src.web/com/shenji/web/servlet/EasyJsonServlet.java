@@ -72,8 +72,10 @@ public class EasyJsonServlet extends HttpServlet {
 		request.setCharacterEncoding("UTF-8");
 		response.setContentType("text/json;charset=UTF-8");
 		PrintWriter out = response.getWriter();
+//		String search = new String(request.getParameter("txtSearch").getBytes(
+//				"ISO8859_1"), "UTF-8");
 		String search = new String(request.getParameter("txtSearch").getBytes(
-				"ISO8859_1"), "UTF-8");
+				"ISO8859_1"), "gbk");
 		System.out.println("搜索内容----->" + search);
 		// System.err.println(tagType);
 		List<EasyItemBean> list = null;
