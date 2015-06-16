@@ -30,8 +30,10 @@ public class SearchThread implements Callable<List<SearchBean>> {
 	private void initSet(){
 		FenciControl control=new FenciControl();
 		String matchStr=control.iKAnalysis(args);
+		System.out.println("matchStr--------->"+matchStr);
 		matchList.addAll(Arrays.asList(matchStr.split("/")));
 		String maxStr=control.iKAnalysisMax(args);
+		System.out.println("maxStr----------->"+maxStr);
 		maxMatchSet.addAll(Arrays.asList(maxStr.split("/")));
 	}
 	/*private void IKAnalysis() {

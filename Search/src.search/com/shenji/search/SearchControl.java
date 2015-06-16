@@ -27,6 +27,7 @@ import com.shenji.search.exception.EngineException;
 import com.shenji.search.exception.SearchProcessException;
 import com.shenji.search.search.SearchEasyJsonThread;
 import com.shenji.search.search.SearchJsonThread;
+import com.shenji.search.search.SearchRelativeJsonThread;
 import com.shenji.search.search.SearchThread;
 import com.shenji.search.strategy.DividingLineServer;
 import com.shenji.search.strategy.EasyScoreComparatorJson;
@@ -220,6 +221,70 @@ public class SearchControl {
 		}
 		// return result;
 	}
+	
+	/**
+	 * 根据关联词获得结果
+	 * @param args
+	 * @param rType
+	 * @param relativeWords 关联词
+	 * @return
+	 * @throws SearchProcessException
+	 */
+	private List<EasyItemBean> searchGetZhouJson(String args,
+			IEnumSearch.SearchRelationType rType,String[] relativeWord) throws SearchProcessException {
+		// 新建线程池
+		// ExecutorService pool =
+		// Executors.newFixedThreadPool(Common.searchDir.length);//重写线程池异常处理
+		ExecutorService pool = this
+				.getExcutorService(Configuration.searchDir.length);
+		// 存放带返回值的线程列表
+		List<Future<List<EasyItemBean>>> list = new ArrayList<Future<List<EasyItemBean>>>();
+		// 存放查询结果的结果集
+		List<EasyItemBean> result = new ArrayList<EasyItemBean>();
+		// 开启Common.searchDir.length个线程
+		try {
+			for (int i = 0; i < Configuration.searchDir.length; i++) {
+				// 新建线程
+//				Callable<List<EasyItemBean>> c = new SearchEasyJsonThread(args,
+//						Configuration.searchDir[i], rType);
+				Callable<List<EasyItemBean>> c = new SearchRelativeJsonThread(args, Configuration.searchDir[i], rType, relativeWord);
+
+				// 提交带返回值的线程给线程池
+				Future<List<EasyItemBean>> f = pool.submit(c);
+				list.add(f);
+			}
+			for (Future<List<EasyItemBean>> f : list) {
+				// 阻塞方法，得到线程中的结果
+				List<EasyItemBean> subList = f.get();
+				// 普通打分排序
+				if (subList != null && subList.size() > 0) {
+					Collections.sort(subList,
+							new EasyScoreComparatorJson<EasyItemBean>());
+					result.addAll(subList);
+				}
+				// 讲该线程查询结果添加到结果集中
+
+			}
+			// 关闭线程池
+			pool.shutdown();
+			return result;
+		} catch (ExecutionException e) {
+			// 判断ExecutionException包装的异常是否为自定义异常
+			if (e.getCause() instanceof SearchProcessException) {// 自定义的异常
+				throw ((SearchProcessException) e.getCause());
+			} else {// 其他可能出现的异常
+				throw new SearchProcessException("Unknow Error in Search!",
+						e.getCause(),
+						SearchProcessException.ErrorCode.UnKnowError);
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			throw new SearchProcessException(
+					"Unknow Error in Search by interRuptedException!",
+					e.getCause(), SearchProcessException.ErrorCode.UnKnowError);
+		}
+		// return result;
+	}
 
 	public String searchBasic(String args, IEnumSearch.SearchRelationType rType)
 			throws SearchProcessException {
@@ -235,11 +300,34 @@ public class SearchControl {
 		return beans;
 	}
 
+	/**
+	 * 
+	 * @param args 搜索的句子
+	 * @param rType or或者and搜索
+	 * @return
+	 * @throws SearchProcessException
+	 */
 	public List<EasyItemBean> searchEasyJson(String args,
 			IEnumSearch.SearchRelationType rType) throws SearchProcessException {
 		List<EasyItemBean> beans = searchGetEasyJson(args, rType);
 		return beans;
 	}
+	
+	/**
+	 * 
+	 * @param args   搜索的句子
+	 * @param rType   or或者and搜索
+	 * @param relativeWord  关联词
+	 * @return
+	 * @throws SearchProcessException
+	 */
+	public List<EasyItemBean> searchEasyJson(String args,
+			IEnumSearch.SearchRelationType rType,String[] relativeWord) throws SearchProcessException {
+		List<EasyItemBean> beans = searchGetZhouJson(args, rType,relativeWord);
+		return beans;
+	}
+	
+	
 
 	private String aftertreatment(String args,
 			List<? extends SearchBean> beans, Comparator comparator) {

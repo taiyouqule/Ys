@@ -27,7 +27,11 @@ public class SearchEasyJsonThread implements Callable<List<EasyItemBean>> {
 		matchList.addAll(Arrays.asList(matchStr.split("/")));
 		String maxStr=control.iKAnalysisMax(args);
 		maxMatchSet.addAll(Arrays.asList(maxStr.split("/")));
+		
+//		System.out.println("matchStr--------->"+matchStr);
+//		System.out.println("maxStr----------->"+maxStr);
 	}
+	
 	/**
 	 * 构造函数
 	 * 
@@ -49,6 +53,8 @@ public class SearchEasyJsonThread implements Callable<List<EasyItemBean>> {
 		//IKAnalysis();
 		initSet();
 	}
+	
+	
 
 	public List<EasyItemBean> call() throws Exception {
 		// 构建布尔查询对象并返回结果

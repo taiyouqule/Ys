@@ -1,24 +1,12 @@
 <%@ page language="java" import="java.util.*"  contentType="text/html; charset=gbk" pageEncoding="gbk"%>
 <%request.setCharacterEncoding("gbk");%> 
-<%
-String path = request.getContextPath();
-String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
-%>
+
 
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <base href="<%=basePath%>">
-    <title>My JSP 'index.jsp' starting page</title>
-	<meta http-equiv="pragma" content="no-cache">
-	<meta http-equiv="cache-control" content="no-cache">
-	<meta http-equiv="expires" content="0">    
-	<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
-	<meta http-equiv="description" content="This is my page">
-	<!--
-	<link rel="stylesheet" type="text/css" href="styles.css">
-	-->
+    <title>税务问答</title>
 	<link href="http://cdn.bootcss.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
 	 <style  type="text/css">
    p{font-color:#33CCFF;}
@@ -30,6 +18,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
   </head>
   
   <body>
+  
    <div class="row">
    <div class="col-md-2"></div> 
      <div class="col-md-2">
@@ -43,9 +32,18 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
    <div class="col-md-2"></div>
  
    <div class="col-md-8">
-   <form name="input" action="index.jsp" method="post">
-    <input type="text" name="question" style="height:30px;width:449px;font-size:12px;"/>
-    <input class="btn btn-default" type="submit" value="提问"/>
+    <!-- <input type="text"  id="question"  style="height:30px;width:449px;font-size:12px;"/>
+    <input class="btn btn-lg btn-info" type="submit" value="提问" onclick="ask()" /> -->
+    
+    
+      <div class="input-group">
+      <input type="text" class="form-control" id="question" style="height:50px">
+       <span class="input-group-btn">
+        <button class="btn btn-default" type="button"  style="height:50px" onclick="ask()">提问</button>
+      </span>
+    </div>
+    
+    
      <div class="checkbox">
   <label>
     <input type="checkbox" value="">
@@ -58,30 +56,39 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
     第二类
   </label>
   </div>
-   </form>
+   
+   <label class="checkbox-inline">
+  <input type="checkbox" id="triple" value="option1"> 二元组
+</label>
+<label class="checkbox-inline">
+  <input type="checkbox" id="inlineCheckbox2" value="option2"> 同义词拓展
+</label>
+<label class="checkbox-inline">
+  <input type="checkbox" id="inlineCheckbox3" value="option3"> apriori算法
+</label>
    </div>
    <div class="col-md-2"></div>
    </div>
    <div class="row">
       <div class="col-md-2"></div>
       <div id="content" class="col-md-8" >
+   </div>
+    <div class="col-md-2"></div>
+    </div>
+    
+  </body>
+  
   <script type="text/javascript">
-	<%if(request.getParameter("question")!=null){%> $.getJSON("EasyJsonServlet?txtSearch=<%=request.getParameter("question")%>", function(json) { 
+    function ask(){
+    	$.getJSON("EasyZhouJsonServlet?txtSearch="+document.getElementById("question").value
+	+"&triple="+(document.getElementById("triple")).checked, function(json) { 
         var res='';
 		for ( var i = 0; i < json.length; i++) {
 			var counter = json[i];
 			res=res+"<a href=\""+counter.path+"\">"+(i+1)+counter.title+"</a>"+counter.content+"<br><br>";
 			       }
        document.getElementById("content").innerHTML=res;
-	   if(res==""){
-	   window.open('Exchange'); 
-	   } 
 	} );
-	<%}%>
-   </script>
-  
-   </div>
-    <div class="col-md-2"></div>
-    </div>
-  </body>
+    }
+    </script>
 </html>

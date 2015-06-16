@@ -62,6 +62,20 @@
     <servlet-name>EasyJsonServlet</servlet-name>
     <servlet-class>com.shenji.web.servlet.EasyJsonServlet</servlet-class>
   </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>GetZhouJsonServlet</servlet-name>
+    <servlet-class>com.servlet.GetZhouJsonServlet</servlet-class>
+  </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>EasyZhouJsonServlet</servlet-name>
+    <servlet-class>com.zhou.servlet.EasyZhouJsonServlet</servlet-class>
+  </servlet>
+
+
 
 
 
@@ -86,6 +100,14 @@
   <servlet-mapping>
     <servlet-name>EasyJsonServlet</servlet-name>
     <url-pattern>/EasyJsonServlet</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>GetZhouJsonServlet</servlet-name>
+    <url-pattern>/GetZhouJsonServlet</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>EasyZhouJsonServlet</servlet-name>
+    <url-pattern>/EasyZhouJsonServlet</url-pattern>
   </servlet-mapping>
 	
 </web-app>
