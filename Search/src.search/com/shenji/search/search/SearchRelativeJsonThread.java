@@ -22,11 +22,16 @@ public class SearchRelativeJsonThread implements Callable<List<EasyItemBean>> {
 	public IEnumSearch.SearchRelationType rType;
 	public String[] relativeWord;
 	private void initSet(){
+		
 		FenciControl control=new FenciControl();
 		String matchStr=control.iKAnalysis(args);
 		matchList.addAll(Arrays.asList(matchStr.split("/")));
+		//System.err.println("=============================="+matchList);
+		
 		String maxStr=control.iKAnalysisMax(args);
 		maxMatchSet.addAll(Arrays.asList(maxStr.split("/")));
+	
+		//System.err.println("==============================="+maxMatchSet);
 		
 //		System.out.println("matchStr--------->"+matchStr);
 //		System.out.println("maxStr----------->"+maxStr);
@@ -71,5 +76,6 @@ public class SearchRelativeJsonThread implements Callable<List<EasyItemBean>> {
 		return result;
 
 	}
+	
 
 }

@@ -39,7 +39,7 @@
       <div class="input-group">
       <input type="text" class="form-control" id="question" style="height:50px">
        <span class="input-group-btn">
-        <button class="btn btn-default" type="button"  style="height:50px" onclick="ask()">提问</button>
+        <button class="btn btn-default" type="button"  style="height:50px" onclick="askTwo()">提问</button>
       </span>
     </div>
     
@@ -61,10 +61,10 @@
   <input type="checkbox" id="triple" value="option1"> 二元组
 </label>
 <label class="checkbox-inline">
-  <input type="checkbox" id="inlineCheckbox2" value="option2"> 同义词拓展
+  <input type="checkbox" id="" value="option2"> 同义词拓展
 </label>
 <label class="checkbox-inline">
-  <input type="checkbox" id="inlineCheckbox3" value="option3"> apriori算法
+  <input type="checkbox" id="apriori" value="option3"> apriori算法
 </label>
    </div>
    <div class="col-md-2"></div>
@@ -80,6 +80,7 @@
   
   <script type="text/javascript">
     function ask(){
+    	//alert('aaaaaaa');
     	$.getJSON("EasyZhouJsonServlet?txtSearch="+document.getElementById("question").value
 	+"&triple="+(document.getElementById("triple")).checked, function(json) { 
         var res='';
@@ -90,5 +91,18 @@
        document.getElementById("content").innerHTML=res;
 	} );
     }
+    function askTwo(){
+    	$.getJSON("EasyZhangJsonServlet?txtSearch="+document.getElementById("question").value
+	+"&apriori="+(document.getElementById("apriori")).checked, function(json) { 
+        //alert('aaaaaaa');
+        var res='';
+		for ( var i = 0; i < json.length; i++) {
+			var counter = json[i];
+			res=res+"<a href=\""+counter.path+"\">"+(i+1)+counter.title+"</a>"+counter.content+"<br><br>";
+			       }
+       document.getElementById("content").innerHTML=res;
+	} );
+    }
+    
     </script>
 </html>
